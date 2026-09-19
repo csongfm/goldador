@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daylist</title>
+    <style>
+        :root {
+            --ink: #1f2933;
+            --muted: #68737d;
+            --paper: #fffdf8;
+            --line: #ddd8ce;
+            --accent: #d45d3d;
+            --accent-dark: #a9422b;
+            --soft: #f2ede4;
+            --success: #3d7a5b;
+            font-family: Georgia, "Times New Roman", serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--ink);
+            background: radial-gradient(circle at 12% 8%, #f6d6bf 0, transparent 28%),
+                linear-gradient(135deg, #f4efe6 0%, #dce8e2 100%);
+        }
+
+        main {
+            width: min(680px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 64px 0 48px;
+        }
+
+        .eyebrow {
+            margin: 0 0 8px;
+            color: var(--accent-dark);
+            font: 700 0.78rem/1.2 system-ui, sans-serif;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(2.6rem, 8vw, 4.8rem);
+            line-height: 0.95;
+            letter-spacing: -0.04em;
+        }
+
+        .intro {
+            max-width: 480px;
+            margin: 18px 0 34px;
+            color: var(--muted);
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+
+        .task-form,
+        .ai-settings {
+            display: flex;
+            gap: 10px;
+        }
+
+        input,
+        button {
+            min-height: 46px;
+            border: 1px solid var(--line);
+            border-radius: 5px;
+            font: 600 0.95rem system-ui, sans-serif;
+        }
+
+        input {
+            width: 100%;
+            padding: 0 14px;
+            color: var(--ink);
+            background: rgba(255, 253, 248, 0.86);
+        }
+
+        input:focus-visible,
+        button:focus-visible {
+            outline: 3px solid rgba(212, 93, 61, 0.3);
+            outline-offset: 2px;
+        }
+
+        button {
+            padding: 0 17px;
+            color: white;
+            border-color: var(--accent);
+            background: var(--accent);
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: var(--accent-dark);
+        }
+
+        button:disabled {
+            cursor: wait;
+            opacity: 0.65;
+        }
+
+        .task-list {
+            display: grid;
+            gap: 9px;
+            margin: 28px 0 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .task {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 14px;
+            border: 1px solid var(--line);
+            border-radius: 5px;
+            background: var(--paper);
+            box-shadow: 0 5px 16px rgba(49, 57, 53, 0.05);
+        }
+
+        .task input {
+            width: 19px;
+            min-height: 19px;
+            accent-color: var(--success);
+        }
+
+        .task label {
+            overflow-wrap: anywhere;
+            font-size: 1.05rem;
+            line-height: 1.35;
+        }
+
+        .task.done label {
+            color: var(--muted);
+            text-decoration: line-through;
+        }
+
+        .delete {
+            min-height: 34px;
+            padding: 0 10px;
+            color: var(--accent-dark);
+            border-color: transparent;
+            background: transparent;
+            font-size: 0.82rem;
+        }
+
+        .delete:hover {
+            background: #f9e8df;
+        }
+
+        .empty {
+            margin: 28px 0;
+            color: var(--muted);
+            font-style: italic;
+            text-align: center;
+        }
+
+        .summary-panel {
+            margin-top: 36px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(104, 115, 125, 0.35);
+        }
+
+        .summary-panel h2 {
+            margin: 0 0 12px;
+            font-size: 1.25rem;
+        }
+
+        .ai-settings input {
+            font-size: 0.84rem;
+        }
+
+        .ai-settings {
+            margin-bottom: 10px;
+        }
+
+        .summary {
+            min-height: 26px;
+            margin: 14px 0 0;
+            color: var(--success);
+            line-height: 1.5;
+        }
+
+        .hint {
+            margin: 0;
+            color: var(--muted);
+            font: 0.78rem/1.4 system-ui, sans-serif;
+        }
+
+        @media (max-width: 520px) {
+            main {
+                padding-top: 40px;
+            }
+
+            .task-form {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .task-form button {
+                width: 100%;
+            }
+
+            .ai-settings {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <p class="eyebrow">A small plan for today</p>
+        <h1>Daylist</h1>
+        <p class="intro">Put the day somewhere you can see it. Check things off as you go.</p>
+
+        <form class="task-form" id="task-form">
+            <label for="task-input" hidden>New task</label>
+            <input id="task-input" name="task" type="text" placeholder="What needs doing?" autocomplete="off" required>
+            <button type="submit">Add task</button>
+        </form>
+
+        <ul class="task-list" id="task-list" aria-live="polite"></ul>
+        <p class="empty" id="empty-state">Your list is clear. Add the first thing.</p>
+
+        <section class="summary-panel" aria-labelledby="summary-heading">
+            <h2 id="summary-heading">Read the shape of your day</h2>
+            <div class="ai-settings">
+                <label for="api-key" hidden>AI API key</label>
+                <input id="api-key" type="password" placeholder="OpenAI API key (kept in this browser)"
+                    autocomplete="off">
+                <label for="api-url" hidden>AI API URL</label>
+                <input id="api-url" type="url" value="https://api.openai.com/v1/chat/completions"
+                    aria-label="AI API URL">
+            </div>
+            <button id="summarize-button" type="button">Summarize my day</button>
+            <p class="hint">Uses an OpenAI-compatible chat completions endpoint. The key is sent only when you request a
+                summary.</p>
+            <p class="summary" id="summary" role="status"></p>
+        </section>
+    </main>
+
+    <script>
+        const STORAGE_KEY = "daylist.tasks";
+        const taskForm = document.querySelector("#task-form");
+        const taskInput = document.querySelector("#task-input");
+        const taskList = document.querySelector("#task-list");
+        const emptyState = document.querySelector("#empty-state");
+        const summarizeButton = document.querySelector("#summarize-button");
+        const summary = document.querySelector("#summary");
+        const apiKeyInput = document.querySelector("#api-key");
+        const apiUrlInput = document.querySelector("#api-url");
+        let tasks = loadTasks();
+
+        function loadTasks() {
+            try {
+                const savedTasks = JSON.parse(localStorage.getItem(STORAGE_KEY));
+                return Array.isArray(savedTasks) ? savedTasks : [];
+            } catch {
+                return [];
+            }
+        }
+
+        function saveTasks() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+        }
+
+        function renderTasks() {
+            taskList.replaceChildren();
+            emptyState.hidden = tasks.length > 0;
+
+            tasks.forEach((task) => {
+                const item = document.createElement("li");
+                item.className = `task${task.done ? " done" : ""}`;
+
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.checked = task.done;
+                checkbox.setAttribute("aria-label", `Mark ${task.text} as done`);
+                checkbox.addEventListener("change", () => {
+                    task.done = checkbox.checked;
+                    saveTasks();
+                    renderTasks();
+                });
+
+                const label = document.createElement("label");
+                label.textContent = task.text;
+
+                const deleteButton = document.createElement("button");
+                deleteButton.className = "delete";
+                deleteButton.type = "button";
+                deleteButton.textContent = "Delete";
+                deleteButton.addEventListener("click", () => {
+                    tasks = tasks.filter((candidate) => candidate.id !== task.id);
+                    saveTasks();
+                    renderTasks();
+                });
+
+                item.append(checkbox, label, deleteButton);
+                taskList.append(item);
+            });
+        }
+
+        taskForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const text = taskInput.value.trim();
+            if (!text) return;
+
+            tasks.push({ id: crypto.randomUUID(), text, done: false });
+            saveTasks();
+            renderTasks();
+            taskForm.reset();
+            taskInput.focus();
+        });
+
+        summarizeButton.addEventListener("click", async () => {
+            const apiKey = apiKeyInput.value.trim();
+            const apiUrl = apiUrlInput.value.trim();
+            if (!apiKey) {
+                summary.textContent = "Add an API key to request a summary.";
+                apiKeyInput.focus();
+                return;
+            }
+            if (!apiUrl) {
+                summary.textContent = "Add an AI API URL to request a summary.";
+                apiUrlInput.focus();
+                return;
+            }
+            if (!tasks.length) {
+                summary.textContent = "Add a task first, then I can describe your day.";
+                return;
+            }
+
+            const todoText = tasks.map((task) => `${task.done ? "Done" : "To do"}: ${task.text}`).join("\n");
+            summarizeButton.disabled = true;
+            summary.textContent = "Reading your list...";
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-4o-mini",
+                        messages: [
+                            { role: "system", content: "Summarize the user's day in exactly one warm, useful sentence." },
+                            { role: "user", content: `Here is my todo list:\n${todoText}` }
+                        ],
+                        temperature: 0.4,
+                        max_tokens: 80
+                    })
+                });
+                if (!response.ok) throw new Error(`Request failed (${response.status})`);
+                const data = await response.json();
+                const message = data.choices?.[0]?.message?.content?.trim();
+                if (!message) throw new Error("The API returned no summary.");
+                summary.textContent = message;
+            } catch (error) {
+                summary.textContent = `Unable to summarize: ${error.message}`;
+            } finally {
+                summarizeButton.disabled = false;
+            }
+        });
+
+        renderTasks();
+    </script>
+</body>
+
+</html>
